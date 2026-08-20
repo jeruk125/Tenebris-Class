@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Kelas: {{ subject.nama }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('student_dashboard') }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Dashboard</a>
+</div>
+
+<h2 class="mb-2">Subjek: {{ subject.nama }}</h2>
+
+<div class="grid-container">
+    {% for meeting in meetings %}
+    <div class="card" style="border-top: 5px solid var(--accent-color);">
+        <h3>Pertemuan {{ meeting.urutan }}: {{ meeting.judul }}</h3>
+
+        <div class="mt-1">
+            <strong>Materi:</strong>
+            <ul style="list-style: none; padding: 0; margin-top: 0.5rem;">
+                {% for material in meeting.materials %}
+                <li style="margin-bottom: 0.5rem;">
+                    <a href="{{ url_for('student_material', material_id=material.id) }}" style="text-decoration: none; color: var(--text-color); display: block; padding: 0.5rem; background-color: var(--bg-color); border-radius: 8px; transition: background-color 0.2s;">
+                        📚 {{ material.judul }}
+                    </a>
+                </li>
+                {% else %}
+                <li style="color: #666; font-size: 0.9rem;">Belum ada materi.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="mt-1">
+            <strong>Quiz:</strong>
+            <ul style="list-style: none; padding: 0; margin-top: 0.5rem;">
+                {% for quiz in meeting.quizzes %}
+                <li style="margin-bottom: 0.5rem;">
+                    <a href="{{ url_for('student_quiz', quiz_id=quiz.id) }}" style="text-decoration: none; color: var(--text-color); display: block; padding: 0.5rem; background-color: #ffe8cc; border-radius: 8px; transition: background-color 0.2s;">
+                        ✍️ {{ quiz.judul }} ({{ quiz.tipe }})
+                    </a>
+                </li>
+                {% else %}
+                <li style="color: #666; font-size: 0.9rem;">Belum ada quiz.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% else %}
+    <p>Belum ada pertemuan untuk kelas ini.</p>
+    {% endfor %}
+</div>
+{% endblock %}

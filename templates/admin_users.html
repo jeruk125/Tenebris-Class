@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Kelola User{% endblock %}
+
+{% block content %}
+<div class="card mb-2">
+    <h2>Kelola Guru</h2>
+
+    <div class="mt-1 mb-2" style="background-color: var(--bg-color); padding: 1.5rem; border-radius: 8px;">
+        <h3>Tambah Guru Baru</h3>
+        <form method="POST" action="{{ url_for('add_teacher') }}" class="mt-1">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" class="form-control" required minlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary">Tambah Guru</button>
+        </form>
+    </div>
+
+    <h3>Daftar Guru</h3>
+    {% if teachers %}
+    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <tr style="background-color: var(--bg-color);">
+            <th style="padding: 10px; text-align: left;">ID</th>
+            <th style="padding: 10px; text-align: left;">Username</th>
+            <th style="padding: 10px; text-align: left;">Aksi</th>
+        </tr>
+        {% for teacher in teachers %}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 10px;">{{ teacher.id }}</td>
+            <td style="padding: 10px;">{{ teacher.username }}</td>
+            <td style="padding: 10px;">
+                <form method="POST" action="{{ url_for('delete_user', user_id=teacher.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-delete" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Hapus</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p class="mt-1">Belum ada akun guru.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Daftar Siswa</h2>
+    {% if students %}
+    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <tr style="background-color: var(--bg-color);">
+            <th style="padding: 10px; text-align: left;">ID</th>
+            <th style="padding: 10px; text-align: left;">Username</th>
+            <th style="padding: 10px; text-align: left;">Aksi</th>
+        </tr>
+        {% for student in students %}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 10px;">{{ student.id }}</td>
+            <td style="padding: 10px;">{{ student.username }}</td>
+            <td style="padding: 10px;">
+                <form method="POST" action="{{ url_for('delete_user', user_id=student.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-delete" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Hapus</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p class="mt-1">Belum ada akun siswa.</p>
+    {% endif %}
+</div>
+{% endblock %}

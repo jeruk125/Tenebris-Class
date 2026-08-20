@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Hasil Quiz: {{ quiz.judul }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    {% set m = quiz.meeting %}
+    <a href="{{ url_for('teacher_subject_detail', subject_id=m.subjek_id) }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Pertemuan</a>
+</div>
+
+<h2>Hasil Quiz: {{ quiz.judul }} ({{ quiz.tipe }})</h2>
+
+<div class="card mt-2">
+    {% if results %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr style="background-color: var(--bg-color);">
+            <th style="padding: 10px; text-align: left;">Siswa</th>
+            <th style="padding: 10px; text-align: left;">Waktu Pengerjaan</th>
+            <th style="padding: 10px; text-align: left;">Skor</th>
+            <th style="padding: 10px; text-align: left;">Aksi</th>
+        </tr>
+        {% for result in results %}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 10px;">{{ result.student.username }}</td>
+            <td style="padding: 10px;">{{ result.waktu_pengerjaan.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td style="padding: 10px;">
+                {% if result.skor is not none %}
+                    {{ result.skor }} / 100
+                {% else %}
+                    Esai (Perlu Review)
+                {% endif %}
+            </td>
+            <td style="padding: 10px;">
+                <a href="{{ url_for('admin_quiz_result_detail', result_id=result.id) }}" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Lihat Detail</a>
+                <form method="POST" action="{{ url_for('delete_quiz_result', result_id=result.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-delete" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Hapus Riwayat</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>Belum ada siswa yang mengerjakan quiz ini.</p>
+    {% endif %}
+</div>
+{% endblock %}
