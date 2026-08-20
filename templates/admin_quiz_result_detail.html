@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Hasil: {{ student.username }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('view_quiz_results', quiz_id=quiz.id) }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Daftar Hasil</a>
+</div>
+
+<h2>Detail Hasil Quiz: {{ student.username }}</h2>
+<p class="mb-2"><strong>Quiz:</strong> {{ quiz.judul }} | <strong>Skor:</strong> {% if result.skor is not none %}{{ result.skor|round|int }}{% else %}Esai (Perlu Review){% endif %}</p>
+
+<div class="card mt-2">
+    <h3>Review Jawaban Siswa</h3>
+
+    {% for q_id, q_data in result.detail.items() %}
+    <div class="mt-2" style="padding: 1.5rem; background-color: var(--bg-color); border-radius: 8px; {% if q_data.is_correct is defined %}{% if q_data.is_correct %}border-left: 5px solid var(--accent-color);{% else %}border-left: 5px solid #FF6B6B;{% endif %}{% endif %}">
+        <p style="font-weight: 500; margin-bottom: 1rem;">{{ q_data.pertanyaan | e | replace('\n', '<br>') | safe }}</p>
+
+        {% if quiz.tipe == 'pilihan_ganda' %}
+            <ul style="list-style: none; padding: 0; margin-left: 1rem;">
+                <li style="{% if q_data.jawaban_benar == 'A' %}font-weight: bold; color: green;{% endif %}">A. {{ q_data.opsi_a | e }}</li>
+                <li style="{% if q_data.jawaban_benar == 'B' %}font-weight: bold; color: green;{% endif %}">B. {{ q_data.opsi_b | e }}</li>
+                <li style="{% if q_data.jawaban_benar == 'C' %}font-weight: bold; color: green;{% endif %}">C. {{ q_data.opsi_c | e }}</li>
+                <li style="{% if q_data.jawaban_benar == 'D' %}font-weight: bold; color: green;{% endif %}">D. {{ q_data.opsi_d | e }}</li>
+            </ul>
+
+            <div class="mt-1" style="padding: 0.8rem; border-radius: 4px; background-color: {% if q_data.is_correct %}#e6ffe6{% else %}#ffe6e6{% endif %};">
+                <strong>Jawaban Siswa:</strong> {{ q_data.jawaban_siswa | e }}
+                {% if not q_data.is_correct %}
+                    <br><strong>Jawaban Benar:</strong> {{ q_data.jawaban_benar | e }}
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="mt-1" style="padding: 0.8rem; border-radius: 4px; background-color: #fff; border: 1px solid #ddd;">
+                <strong>Jawaban Siswa:</strong><br>
+                {{ q_data.jawaban_siswa | e | replace('\n', '<br>') | safe }}
+            </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

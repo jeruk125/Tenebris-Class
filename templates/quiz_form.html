@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Quiz{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('teacher_subject_detail', subject_id=meeting.subjek_id) }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Pertemuan</a>
+</div>
+
+<div class="card">
+    <h2>{{ action }} Quiz - Pertemuan {{ meeting.urutan }}</h2>
+
+    <form method="POST" class="mt-1">
+        <div class="form-group">
+            <label>Judul Quiz</label>
+            <input type="text" name="judul" class="form-control" required value="{{ quiz.judul if quiz else '' }}">
+        </div>
+        <div class="form-group">
+            <label>Tipe Quiz</label>
+            <select name="tipe" class="form-control" required onchange="updateFormatHint(this.value)">
+                <option value="pilihan_ganda" {% if quiz and quiz.tipe == 'pilihan_ganda' %}selected{% endif %}>Pilihan Ganda</option>
+                <option value="teks" {% if quiz and quiz.tipe == 'teks' %}selected{% endif %}>Teks/Esai</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Soal (Ikuti format dengan ketat)</label>
+            <textarea name="teks_mentah" class="form-control" required style="min-height: 300px; font-family: monospace;">{{ quiz.teks_mentah if quiz else '' }}</textarea>
+
+            <div id="hint_pilihan_ganda" style="background-color: #f0f0f0; padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-family: monospace; font-size: 0.9rem;">
+                SOAL 1<br>
+                Apa ibu kota Indonesia?<br>
+                A. Bandung<br>
+                B. Jakarta<br>
+                C. Surabaya<br>
+                D. Medan<br>
+                JAWABAN: B
+            </div>
+
+            <div id="hint_teks" style="display: none; background-color: #f0f0f0; padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-family: monospace; font-size: 0.9rem;">
+                SOAL 1<br>
+                Jelaskan proses fotosintesis!<br><br>
+                SOAL 2<br>
+                Sebutkan ciri makhluk hidup.
+            </div>
+        </div>
+        <button type="submit" class="btn btn-accent">Simpan Quiz</button>
+    </form>
+</div>
+
+<script>
+function updateFormatHint(tipe) {
+    if(tipe === 'pilihan_ganda') {
+        document.getElementById('hint_pilihan_ganda').style.display = 'block';
+        document.getElementById('hint_teks').style.display = 'none';
+    } else {
+        document.getElementById('hint_pilihan_ganda').style.display = 'none';
+        document.getElementById('hint_teks').style.display = 'block';
+    }
+}
+// Initial call based on current selection if editing
+window.onload = function() {
+    updateFormatHint(document.querySelector('select[name="tipe"]').value);
+};
+</script>
+{% endblock %}

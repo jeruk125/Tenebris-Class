@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Guru{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-2">
+    <h2>Daftar Subjek Pelajaran</h2>
+    <button onclick="document.getElementById('addSubjectForm').style.display='block'" class="btn btn-primary">Tambah Subjek</button>
+</div>
+
+<div id="addSubjectForm" class="card mb-2" style="display:none; background-color: var(--secondary-color);">
+    <h3>Tambah Subjek Baru</h3>
+    <form method="POST" action="{{ url_for('create_subject') }}" class="mt-1">
+        <div class="form-group">
+            <label>Nama Subjek</label>
+            <input type="text" name="nama" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+        <button type="button" class="btn" onclick="document.getElementById('addSubjectForm').style.display='none'">Batal</button>
+    </form>
+</div>
+
+<div class="grid-container">
+    {% for subject in subjects %}
+    <div class="card">
+        <h3>{{ subject.nama }}</h3>
+        <p class="mt-1 mb-1">Dibuat oleh ID: {{ subject.dibuat_oleh }}</p>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{{ url_for('teacher_subject_detail', subject_id=subject.id) }}" class="btn btn-primary" style="font-size: 0.9rem;">Kelola Konten</a>
+            <a href="{{ url_for('manage_students', subject_id=subject.id) }}" class="btn btn-accent" style="font-size: 0.9rem;">Kelola Siswa</a>
+            <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-delete" style="font-size: 0.9rem;">Hapus</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <p>Belum ada subjek pelajaran. Silakan tambah baru.</p>
+    {% endfor %}
+</div>
+
+{% if current_user.role == 'guru' %}
+<div class="card mt-2">
+    <h2>Kelola Akun Siswa (Global)</h2>
+    <p class="mb-1">Berikut adalah daftar seluruh siswa yang terdaftar di sistem. Anda dapat menghapus akun mereka jika diperlukan.</p>
+
+    {% if all_students %}
+    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <tr style="background-color: var(--bg-color);">
+            <th style="padding: 10px; text-align: left;">ID</th>
+            <th style="padding: 10px; text-align: left;">Username</th>
+            <th style="padding: 10px; text-align: left;">Aksi</th>
+        </tr>
+        {% for student in all_students %}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 10px;">{{ student.id }}</td>
+            <td style="padding: 10px;">{{ student.username }}</td>
+            <td style="padding: 10px;">
+                <form method="POST" action="{{ url_for('delete_user', user_id=student.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-delete" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Hapus Akun</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>Belum ada akun siswa.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
