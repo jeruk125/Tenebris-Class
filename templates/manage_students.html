@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Kelola Siswa: {{ subject.nama }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('teacher_dashboard') }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Dashboard</a>
+</div>
+
+<h2>Kelola Siswa - {{ subject.nama }}</h2>
+
+<div class="grid-container mt-2">
+    <div class="card">
+        <h3>Siswa Terdaftar di Subjek Ini</h3>
+        <ul style="margin-top: 1rem; list-style: none; padding: 0;">
+            {% for student in enrolled %}
+            <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid #ddd;">
+                {{ student.username }}
+                <form method="POST" action="{{ url_for('manage_students', subject_id=subject.id) }}" style="margin: 0;">
+                    <input type="hidden" name="action" value="remove">
+                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                    <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Keluarkan</button>
+                </form>
+            </li>
+            {% else %}
+            <p>Belum ada siswa yang ditambahkan ke subjek ini.</p>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card">
+        <h3>Siswa Belum Terdaftar</h3>
+        <ul style="margin-top: 1rem; list-style: none; padding: 0;">
+            {% for student in unenrolled %}
+            <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid #ddd;">
+                {{ student.username }}
+                <form method="POST" action="{{ url_for('manage_students', subject_id=subject.id) }}" style="margin: 0;">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Tambahkan</button>
+                </form>
+            </li>
+            {% else %}
+            <p>Semua siswa sudah terdaftar di subjek ini.</p>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
