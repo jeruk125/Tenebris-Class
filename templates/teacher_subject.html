@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Kelola: {{ subject.nama }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('teacher_dashboard') }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Dashboard</a>
+</div>
+
+<div class="flex-between mb-2">
+    <h2>Subjek: {{ subject.nama }}</h2>
+    <button onclick="document.getElementById('addMeetingForm').style.display='block'" class="btn btn-accent">Tambah Pertemuan</button>
+</div>
+
+<div id="addMeetingForm" class="card mb-2" style="display:none; background-color: var(--accent-color);">
+    <h3>Tambah Pertemuan Baru</h3>
+    <form method="POST" action="{{ url_for('create_meeting', subject_id=subject.id) }}" class="mt-1">
+        <div class="form-group">
+            <label>Judul Pertemuan</label>
+            <input type="text" name="judul" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+        <button type="button" class="btn" onclick="document.getElementById('addMeetingForm').style.display='none'">Batal</button>
+    </form>
+</div>
+
+{% for meeting in meetings %}
+<div class="card mb-2">
+    <div class="flex-between" style="border-bottom: 2px solid var(--bg-color); padding-bottom: 1rem; margin-bottom: 1rem;">
+        <h3>Pertemuan {{ meeting.urutan }}: {{ meeting.judul }}</h3>
+        <form method="POST" action="{{ url_for('delete_meeting', meeting_id=meeting.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-danger btn-delete" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Hapus Pertemuan</button>
+        </form>
+    </div>
+
+    <div style="margin-bottom: 1rem;">
+        <strong>Materi:</strong>
+        <a href="{{ url_for('create_material', meeting_id=meeting.id) }}" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #eee; margin-left: 1rem;">+ Tambah Materi</a>
+        <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            {% for material in meeting.materials %}
+            <li style="margin-bottom: 0.5rem;">
+                {{ material.judul }}
+                <a href="{{ url_for('edit_material', material_id=material.id) }}" style="margin-left: 10px; color: var(--primary-color);">Edit</a>
+                <form method="POST" action="{{ url_for('delete_material', material_id=material.id) }}" style="display:inline; margin-left: 10px;">
+                    <button type="submit" class="btn-delete" style="border:none; background:none; color:#FF6B6B; cursor:pointer;">Hapus</button>
+                </form>
+            </li>
+            {% else %}
+            <li>Belum ada materi.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <strong>Quiz:</strong>
+        <a href="{{ url_for('create_quiz', meeting_id=meeting.id) }}" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #eee; margin-left: 1rem;">+ Tambah Quiz</a>
+        <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            {% for quiz in meeting.quizzes %}
+            <li style="margin-bottom: 0.5rem;">
+                {{ quiz.judul }} ({{ quiz.tipe }})
+                <a href="{{ url_for('edit_quiz', quiz_id=quiz.id) }}" style="margin-left: 10px; color: var(--primary-color);">Edit</a>
+                <a href="{{ url_for('view_quiz_results', quiz_id=quiz.id) }}" style="margin-left: 10px; color: var(--accent-color); font-weight: bold;">Lihat Hasil</a>
+                <form method="POST" action="{{ url_for('delete_quiz', quiz_id=quiz.id) }}" style="display:inline; margin-left: 10px;">
+                    <button type="submit" class="btn-delete" style="border:none; background:none; color:#FF6B6B; cursor:pointer;">Hapus</button>
+                </form>
+            </li>
+            {% else %}
+            <li>Belum ada quiz.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% else %}
+<p>Belum ada pertemuan. Silakan tambahkan pertemuan pertama.</p>
+{% endfor %}
+
+{% endblock %}

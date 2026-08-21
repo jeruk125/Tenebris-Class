@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}{{ material.judul }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('student_subject', subject_id=meeting.subjek_id) }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Daftar Pertemuan</a>
+</div>
+
+<div class="card material-content">
+    {{ parsed_content | safe }}
+</div>
+{% endblock %}
