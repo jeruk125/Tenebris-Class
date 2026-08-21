@@ -52,10 +52,18 @@ class AppTestCase(unittest.TestCase):
             meeting_id = meeting.id
 
         # 6. Create Quiz
+        import json
         quiz_data = {
             'judul': 'Quiz 1',
             'tipe': 'pilihan_ganda',
-            'teks_mentah': "SOAL 1\n1+1=?\nA. 1\nB. 2\nC. 3\nD. 4\nJAWABAN: B"
+            'questions_data': json.dumps([{
+                'pertanyaan': '1+1=?',
+                'opsi_a': '1',
+                'opsi_b': '2',
+                'opsi_c': '3',
+                'opsi_d': '4',
+                'jawaban_benar': 'B'
+            }])
         }
         response = self.client.post(f'/meeting/{meeting_id}/quiz/create', data=quiz_data, follow_redirects=True)
 
