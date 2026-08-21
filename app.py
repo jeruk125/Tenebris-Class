@@ -25,14 +25,6 @@ def nl2br_filter(s):
         return ""
     return Markup('<br>\n'.join(escape(s).splitlines()))
 
-from markupsafe import Markup, escape
-
-@app.template_filter('nl2br')
-def nl2br_filter(s):
-    if not s:
-        return ""
-    return Markup('<br>\n'.join(escape(s).splitlines()))
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -370,6 +362,47 @@ def delete_material(material_id):
     return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
 
 
+from flask import jsonify
+
+@app.route('/api/parse_quiz_raw', methods=['POST'])
+@login_required
+def parse_quiz_raw():
+    if current_user.role not in ['admin', 'guru']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    if not data or 'teks_mentah' not in data or 'tipe' not in data:
+        return jsonify({'error': 'Invalid request'}), 400
+
+    tipe = data['tipe']
+    teks = data['teks_mentah']
+
+    if tipe == 'pilihan_ganda':
+        questions = parse_quiz_mcq(teks)
+    elif tipe == 'teks':
+        questions = parse_quiz_text(teks)
+    else:
+        return jsonify({'error': 'Unknown type'}), 400
+
+    return jsonify({'questions': questions})
+
+import json
+
+def reconstruct_quiz_raw_text(tipe, questions_data):
+    """Reconstructs the original raw text block format from a list of question dicts"""
+    raw_lines = []
+    for i, q in enumerate(questions_data, 1):
+        raw_lines.append(f"SOAL {i}")
+        raw_lines.append(q.get('pertanyaan', ''))
+        if tipe == 'pilihan_ganda':
+            raw_lines.append(f"A. {q.get('opsi_a', '')}")
+            raw_lines.append(f"B. {q.get('opsi_b', '')}")
+            raw_lines.append(f"C. {q.get('opsi_c', '')}")
+            raw_lines.append(f"D. {q.get('opsi_d', '')}")
+            raw_lines.append(f"JAWABAN: {q.get('jawaban_benar', 'A')}")
+        # For essay, we just need the question.
+    return '\n'.join(raw_lines)
+
 @app.route('/meeting/<int:meeting_id>/quiz/create', methods=['GET', 'POST'])
 @login_required
 def create_quiz(meeting_id):
@@ -380,7 +413,14 @@ def create_quiz(meeting_id):
     if request.method == 'POST':
         judul = request.form.get('judul')
         tipe = request.form.get('tipe')
-        teks_mentah = request.form.get('teks_mentah')
+        questions_data_str = request.form.get('questions_data')
+
+        try:
+            questions_data = json.loads(questions_data_str)
+        except:
+            questions_data = []
+
+        teks_mentah = reconstruct_quiz_raw_text(tipe, questions_data)
 
         new_quiz = Quiz(
             pertemuan_id=meeting.id,
@@ -392,16 +432,24 @@ def create_quiz(meeting_id):
         db.session.add(new_quiz)
         db.session.flush() # get quiz id
 
-        # Parse and create questions based on type
+        # Create questions based on structured data
         if tipe == 'pilihan_ganda':
-            questions_data = parse_quiz_mcq(teks_mentah)
             for q_data in questions_data:
-                q = QuestionMCQ(quiz_id=new_quiz.id, **q_data)
+                q = QuestionMCQ(
+                    quiz_id=new_quiz.id,
+                    pertanyaan=q_data.get('pertanyaan',''),
+                    opsi_a=q_data.get('opsi_a',''), opsi_b=q_data.get('opsi_b',''),
+                    opsi_c=q_data.get('opsi_c',''), opsi_d=q_data.get('opsi_d',''),
+                    jawaban_benar=q_data.get('jawaban_benar','A')
+                )
                 db.session.add(q)
         elif tipe == 'teks':
-            questions_data = parse_quiz_text(teks_mentah)
             for q_data in questions_data:
-                q = QuestionText(quiz_id=new_quiz.id, **q_data)
+                q = QuestionText(
+                    quiz_id=new_quiz.id,
+                    pertanyaan=q_data.get('pertanyaan',''),
+                    jawaban_referensi=q_data.get('jawaban_referensi','')
+                )
                 db.session.add(q)
 
         db.session.commit()
@@ -409,6 +457,65 @@ def create_quiz(meeting_id):
         return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
 
     return render_template('quiz_form.html', meeting=meeting, action='Create')
+
+@app.route('/quiz/edit/<int:quiz_id>', methods=['GET', 'POST'])
+@login_required
+def edit_quiz(quiz_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    quiz = Quiz.query.get_or_404(quiz_id)
+    meeting = Meeting.query.get(quiz.pertemuan_id)
+
+    if request.method == 'POST':
+        quiz.judul = request.form.get('judul')
+        # We don't allow changing type during edit for simplicity, or we can just drop old questions if they do.
+        # But UI allows it (changing type drops questions via JS), so we handle it:
+        new_tipe = request.form.get('tipe')
+        questions_data_str = request.form.get('questions_data')
+
+        try:
+            questions_data = json.loads(questions_data_str)
+        except:
+            questions_data = []
+
+        teks_mentah = reconstruct_quiz_raw_text(new_tipe, questions_data)
+
+        quiz.tipe = new_tipe
+        quiz.teks_mentah = teks_mentah
+
+        # Delete old questions
+        if quiz.tipe == 'pilihan_ganda' or new_tipe != quiz.tipe:
+            for q in quiz.mcq_questions: db.session.delete(q)
+        if quiz.tipe == 'teks' or new_tipe != quiz.tipe:
+            for q in quiz.text_questions: db.session.delete(q)
+
+        db.session.flush()
+
+        # Insert new questions
+        if new_tipe == 'pilihan_ganda':
+            for q_data in questions_data:
+                q = QuestionMCQ(
+                    quiz_id=quiz.id,
+                    pertanyaan=q_data.get('pertanyaan',''),
+                    opsi_a=q_data.get('opsi_a',''), opsi_b=q_data.get('opsi_b',''),
+                    opsi_c=q_data.get('opsi_c',''), opsi_d=q_data.get('opsi_d',''),
+                    jawaban_benar=q_data.get('jawaban_benar','A')
+                )
+                db.session.add(q)
+        elif new_tipe == 'teks':
+            for q_data in questions_data:
+                q = QuestionText(
+                    quiz_id=quiz.id,
+                    pertanyaan=q_data.get('pertanyaan',''),
+                    jawaban_referensi=q_data.get('jawaban_referensi','')
+                )
+                db.session.add(q)
+
+        db.session.commit()
+        flash('Quiz berhasil diperbarui.', 'success')
+        return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
+
+    return render_template('quiz_form.html', meeting=meeting, quiz=quiz, action='Edit')
 
 @app.route('/quiz/delete/<int:quiz_id>', methods=['POST'])
 @login_required
@@ -544,8 +651,4 @@ def create_admin():
 
 if __name__ == '__main__':
     create_admin()
-    app.run(
-        host=os.environ.get('FLASK_HOST', '0.0.0.0'),
-        port=int(os.environ.get('FLASK_PORT', 5000)),
-        debug=os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    )
+    app.run(debug=os.environ.get('FLASK_DEBUG', 'False').lower() == 'true')
