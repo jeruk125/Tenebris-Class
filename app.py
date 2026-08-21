@@ -25,6 +25,14 @@ def nl2br_filter(s):
         return ""
     return Markup('<br>\n'.join(escape(s).splitlines()))
 
+from markupsafe import Markup, escape
+
+@app.template_filter('nl2br')
+def nl2br_filter(s):
+    if not s:
+        return ""
+    return Markup('<br>\n'.join(escape(s).splitlines()))
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
