@@ -26,10 +26,24 @@
 
 {% for meeting in meetings %}
 <div class="card mb-2">
-    <div class="flex-between" style="border-bottom: 2px solid var(--bg-color); padding-bottom: 1rem; margin-bottom: 1rem;">
+    <div id="meetingView_{{ meeting.id }}" class="flex-between" style="border-bottom: 2px solid var(--bg-color); padding-bottom: 1rem; margin-bottom: 1rem;">
         <h3>Pertemuan {{ meeting.urutan }}: {{ meeting.judul }}</h3>
-        <form method="POST" action="{{ url_for('delete_meeting', meeting_id=meeting.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-danger btn-delete" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Hapus Pertemuan</button>
+        <div>
+            <button type="button" onclick="document.getElementById('meetingView_{{ meeting.id }}').style.display='none'; document.getElementById('meetingEdit_{{ meeting.id }}').style.display='block';" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: #eee;">Edit</button>
+            <form method="POST" action="{{ url_for('delete_meeting', meeting_id=meeting.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-delete" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Hapus Pertemuan</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="meetingEdit_{{ meeting.id }}" style="display:none; border-bottom: 2px solid var(--bg-color); padding-bottom: 1rem; margin-bottom: 1rem; background-color: var(--secondary-color); padding: 1rem; border-radius: 8px;">
+        <h4>Edit Pertemuan {{ meeting.urutan }}</h4>
+        <form method="POST" action="{{ url_for('edit_meeting', meeting_id=meeting.id) }}" class="mt-1" style="display: flex; gap: 10px; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
+                <input type="text" name="judul" class="form-control" value="{{ meeting.judul }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Simpan</button>
+            <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="document.getElementById('meetingEdit_{{ meeting.id }}').style.display='none'; document.getElementById('meetingView_{{ meeting.id }}').style.display='flex';">Batal</button>
         </form>
     </div>
 

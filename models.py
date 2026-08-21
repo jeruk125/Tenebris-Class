@@ -41,6 +41,14 @@ class Material(db.Model):
     teks_mentah = db.Column(db.Text, nullable=False)
     dibuat_oleh = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+    files = db.relationship('MaterialFile', backref='material', cascade="all, delete-orphan", lazy=True)
+
+class MaterialFile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+
 class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     pertemuan_id = db.Column(db.Integer, db.ForeignKey('meeting.id'), nullable=False)

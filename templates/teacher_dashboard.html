@@ -23,13 +23,27 @@
 <div class="grid-container">
     {% for subject in subjects %}
     <div class="card">
-        <h3>{{ subject.nama }}</h3>
-        <p class="mt-1 mb-1">Dibuat oleh ID: {{ subject.dibuat_oleh }}</p>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <a href="{{ url_for('teacher_subject_detail', subject_id=subject.id) }}" class="btn btn-primary" style="font-size: 0.9rem;">Kelola Konten</a>
-            <a href="{{ url_for('manage_students', subject_id=subject.id) }}" class="btn btn-accent" style="font-size: 0.9rem;">Kelola Siswa</a>
-            <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" style="display:inline;">
-                <button type="submit" class="btn btn-danger btn-delete" style="font-size: 0.9rem;">Hapus</button>
+        <div id="subjectView_{{ subject.id }}">
+            <h3>{{ subject.nama }}</h3>
+            <p class="mt-1 mb-1">Dibuat oleh ID: {{ subject.dibuat_oleh }}</p>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('teacher_subject_detail', subject_id=subject.id) }}" class="btn btn-primary" style="font-size: 0.9rem;">Kelola Konten</a>
+                <a href="{{ url_for('manage_students', subject_id=subject.id) }}" class="btn btn-accent" style="font-size: 0.9rem;">Kelola Siswa</a>
+                <button type="button" onclick="document.getElementById('subjectView_{{ subject.id }}').style.display='none'; document.getElementById('subjectEdit_{{ subject.id }}').style.display='block';" class="btn" style="font-size: 0.9rem; background-color: #eee;">Edit</button>
+                <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-delete" style="font-size: 0.9rem;">Hapus</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="subjectEdit_{{ subject.id }}" style="display:none; background-color: var(--secondary-color); padding: 1rem; border-radius: 8px;">
+            <h4>Edit Subjek</h4>
+            <form method="POST" action="{{ url_for('edit_subject', subject_id=subject.id) }}" class="mt-1">
+                <div class="form-group">
+                    <input type="text" name="nama" class="form-control" value="{{ subject.nama }}" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="font-size: 0.9rem;">Simpan</button>
+                <button type="button" class="btn" style="font-size: 0.9rem;" onclick="document.getElementById('subjectEdit_{{ subject.id }}').style.display='none'; document.getElementById('subjectView_{{ subject.id }}').style.display='block';">Batal</button>
             </form>
         </div>
     </div>

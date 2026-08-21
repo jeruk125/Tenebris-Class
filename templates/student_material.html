@@ -9,5 +9,20 @@
 
 <div class="card material-content">
     {{ parsed_content | safe }}
+
+    {% if material.files %}
+    <div class="mt-2" style="padding-top: 1rem; border-top: 1px solid #ddd;">
+        <h3>File Lampiran:</h3>
+        <ul style="list-style-type: none; padding: 0; margin-top: 1rem;">
+        {% for f in material.files %}
+            <li style="margin-bottom: 0.5rem;">
+                <a href="{{ url_for('uploaded_file', filename=f.filename) }}" target="_blank" class="btn btn-accent" style="padding: 0.3rem 0.6rem; font-size: 0.9rem; text-decoration: none; display: inline-block;">
+                    &#128194; Buka/Unduh {{ f.original_filename }}
+                </a>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
