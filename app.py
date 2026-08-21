@@ -8,6 +8,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_very_secret_key_for_this_app')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload size
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'mp4'}
 
 db.init_app(app)
 login_manager.init_app(app)
@@ -17,7 +21,11 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from models import Subject, Meeting, Material, Quiz, QuestionMCQ, QuestionText, QuizResult
 
+from werkzeug.utils import secure_filename
 from markupsafe import Markup, escape
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.template_filter('nl2br')
 def nl2br_filter(s):
@@ -227,6 +235,19 @@ def create_subject():
     flash('Subjek berhasil ditambahkan.', 'success')
     return redirect(url_for('teacher_dashboard'))
 
+@app.route('/subject/edit/<int:subject_id>', methods=['POST'])
+@login_required
+def edit_subject(subject_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    subject = Subject.query.get_or_404(subject_id)
+    nama = request.form.get('nama')
+    if nama:
+        subject.nama = nama
+        db.session.commit()
+        flash('Subjek berhasil diperbarui.', 'success')
+    return redirect(url_for('teacher_dashboard'))
+
 @app.route('/subject/delete/<int:subject_id>', methods=['POST'])
 @login_required
 def delete_subject(subject_id):
@@ -294,6 +315,19 @@ def create_meeting(subject_id):
     flash('Pertemuan berhasil ditambahkan.', 'success')
     return redirect(url_for('teacher_subject_detail', subject_id=subject_id))
 
+@app.route('/meeting/edit/<int:meeting_id>', methods=['POST'])
+@login_required
+def edit_meeting(meeting_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    meeting = Meeting.query.get_or_404(meeting_id)
+    judul = request.form.get('judul')
+    if judul:
+        meeting.judul = judul
+        db.session.commit()
+        flash('Pertemuan berhasil diperbarui.', 'success')
+    return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
+
 @app.route('/meeting/delete/<int:meeting_id>', methods=['POST'])
 @login_required
 def delete_meeting(meeting_id):
@@ -307,6 +341,10 @@ def delete_meeting(meeting_id):
     return redirect(url_for('teacher_subject_detail', subject_id=subject_id))
 
 from parsers import parse_material, parse_quiz_mcq, parse_quiz_text
+
+import uuid
+from models import MaterialFile
+from flask import send_from_directory
 
 @app.route('/meeting/<int:meeting_id>/material/create', methods=['GET', 'POST'])
 @login_required
@@ -326,6 +364,24 @@ def create_material(meeting_id):
             dibuat_oleh=current_user.id
         )
         db.session.add(new_material)
+        db.session.flush() # get material id
+
+        files = request.files.getlist('files')
+        for file in files:
+            if file and allowed_file(file.filename):
+                original_filename = secure_filename(file.filename)
+                extension = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
+                new_filename = f"{uuid.uuid4().hex}_{original_filename}"
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+                file.save(file_path)
+
+                mat_file = MaterialFile(
+                    material_id=new_material.id,
+                    filename=new_filename,
+                    original_filename=original_filename
+                )
+                db.session.add(mat_file)
+
         db.session.commit()
         flash('Materi berhasil ditambahkan.', 'success')
         return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
@@ -343,11 +399,50 @@ def edit_material(material_id):
     if request.method == 'POST':
         material.judul = request.form.get('judul')
         material.teks_mentah = request.form.get('teks_mentah')
+
+        files = request.files.getlist('files')
+        for file in files:
+            if file and allowed_file(file.filename):
+                original_filename = secure_filename(file.filename)
+                extension = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
+                new_filename = f"{uuid.uuid4().hex}_{original_filename}"
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+                file.save(file_path)
+
+                mat_file = MaterialFile(
+                    material_id=material.id,
+                    filename=new_filename,
+                    original_filename=original_filename
+                )
+                db.session.add(mat_file)
+
         db.session.commit()
         flash('Materi berhasil diperbarui.', 'success')
         return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
 
     return render_template('material_form.html', meeting=meeting, material=material, action='Edit')
+
+@app.route('/material/file/delete/<int:file_id>', methods=['POST'])
+@login_required
+def delete_material_file(file_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    mat_file = MaterialFile.query.get_or_404(file_id)
+    material_id = mat_file.material_id
+
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], mat_file.filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    db.session.delete(mat_file)
+    db.session.commit()
+    flash('File berhasil dihapus.', 'success')
+    return redirect(url_for('edit_material', material_id=material_id))
+
+@app.route('/uploads/<filename>')
+@login_required
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/material/delete/<int:material_id>', methods=['POST'])
 @login_required
@@ -356,6 +451,13 @@ def delete_material(material_id):
         return redirect(url_for('index'))
     material = Material.query.get_or_404(material_id)
     meeting = Meeting.query.get(material.pertemuan_id)
+
+    # clean up physical files
+    for mat_file in material.files:
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], mat_file.filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
     db.session.delete(material)
     db.session.commit()
     flash('Materi berhasil dihapus.', 'success')
@@ -551,6 +653,40 @@ def admin_quiz_result_detail(result_id):
     quiz = Quiz.query.get(result.quiz_id)
     student = User.query.get(result.siswa_id)
     return render_template('admin_quiz_result_detail.html', result=result, quiz=quiz, student=student)
+
+@app.route('/quiz/result/<int:result_id>/grade', methods=['POST'])
+@login_required
+def grade_quiz_essay(result_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+
+    result = QuizResult.query.get_or_404(result_id)
+
+    total_score = request.form.get('total_score')
+    if total_score is not None:
+        try:
+            result.skor = float(total_score)
+
+            # Optionally update individual details with points
+            current_detail = dict(result.detail) # force new object to ensure JSON mutation tracked
+            for q_id in current_detail:
+                point_val = request.form.get(f'point_{q_id}')
+                if point_val:
+                    current_detail[q_id]['poin'] = float(point_val)
+
+            # Set via the setter which does json.dumps
+            result.detail = current_detail
+
+            # mark modified for SQLAlchemy
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(result, "detail_jawaban")
+
+            db.session.commit()
+            flash('Nilai berhasil disimpan.', 'success')
+        except ValueError:
+            flash('Format nilai tidak valid.', 'error')
+
+    return redirect(url_for('admin_quiz_result_detail', result_id=result.id))
 
 @app.route('/quiz/result/delete/<int:result_id>', methods=['POST'])
 @login_required
