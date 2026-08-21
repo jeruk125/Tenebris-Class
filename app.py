@@ -17,6 +17,14 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from models import Subject, Meeting, Material, Quiz, QuestionMCQ, QuestionText, QuizResult
 
+from markupsafe import Markup, escape
+
+@app.template_filter('nl2br')
+def nl2br_filter(s):
+    if not s:
+        return ""
+    return Markup('<br>\n'.join(escape(s).splitlines()))
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -528,8 +536,4 @@ def create_admin():
 
 if __name__ == '__main__':
     create_admin()
-    app.run(
-        host=os.environ.get('FLASK_HOST', '0.0.0.0'),
-        port=int(os.environ.get('FLASK_PORT', 5000)),
-        debug=os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    )
+    app.run(debug=os.environ.get('FLASK_DEBUG', 'False').lower() == 'true')
