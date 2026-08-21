@@ -10,23 +10,32 @@
 <div class="card">
     <h2>{{ action }} Quiz - Pertemuan {{ meeting.urutan }}</h2>
 
-    <form method="POST" class="mt-1">
+    <form id="quizForm" method="POST" class="mt-1">
         <div class="form-group">
             <label>Judul Quiz</label>
-            <input type="text" name="judul" class="form-control" required value="{{ quiz.judul if quiz else '' }}">
+            <input type="text" name="judul" id="quizJudul" class="form-control" required value="{{ quiz.judul if quiz else '' }}">
         </div>
         <div class="form-group">
-            <label>Tipe Quiz</label>
-            <select name="tipe" class="form-control" required onchange="updateFormatHint(this.value)">
+            <label>Tipe Quiz (Mengubah tipe akan menghapus soal di bawah)</label>
+            <select name="tipe" id="quizTipe" class="form-control" required onchange="handleTypeChange()">
                 <option value="pilihan_ganda" {% if quiz and quiz.tipe == 'pilihan_ganda' %}selected{% endif %}>Pilihan Ganda</option>
                 <option value="teks" {% if quiz and quiz.tipe == 'teks' %}selected{% endif %}>Teks/Esai</option>
             </select>
         </div>
-        <div class="form-group">
-            <label>Soal (Ikuti format dengan ketat)</label>
-            <textarea name="teks_mentah" class="form-control" required style="min-height: 300px; font-family: monospace;">{{ quiz.teks_mentah if quiz else '' }}</textarea>
 
-            <div id="hint_pilihan_ganda" style="background-color: #f0f0f0; padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-family: monospace; font-size: 0.9rem;">
+        <div class="form-group mt-2">
+            <h3>Daftar Soal</h3>
+            <div id="questionsContainer">
+                <!-- Soal akan di-render di sini oleh JavaScript -->
+            </div>
+        </div>
+
+        <div class="form-group mt-2" style="background-color: var(--secondary-color); padding: 1.5rem; border-radius: 8px;">
+            <h3>Parser Tambahan</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">Gunakan format parser di bawah ini untuk menambahkan soal baru dengan cepat. Klik "Parser" untuk menyisipkan ke daftar soal.</p>
+            <textarea id="rawTextParser" class="form-control" style="min-height: 150px; font-family: monospace;"></textarea>
+
+            <div id="hint_pilihan_ganda" style="display: none; background-color: #fff; padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-family: monospace; font-size: 0.8rem; border: 1px solid #ddd;">
                 SOAL 1<br>
                 Apa ibu kota Indonesia?<br>
                 A. Bandung<br>
@@ -36,19 +45,44 @@
                 JAWABAN: B
             </div>
 
-            <div id="hint_teks" style="display: none; background-color: #f0f0f0; padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-family: monospace; font-size: 0.9rem;">
+            <div id="hint_teks" style="display: none; background-color: #fff; padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-family: monospace; font-size: 0.8rem; border: 1px solid #ddd;">
                 SOAL 1<br>
                 Jelaskan proses fotosintesis!<br><br>
                 SOAL 2<br>
                 Sebutkan ciri makhluk hidup.
             </div>
+
+            <button type="button" class="btn btn-primary mt-1" onclick="parseRawText()">Parser Teks</button>
         </div>
-        <button type="submit" class="btn btn-accent">Simpan Quiz</button>
+
+        <button type="button" class="btn btn-accent mt-2" style="width: 100%; padding: 1rem;" onclick="submitQuizForm()">Simpan Quiz</button>
     </form>
 </div>
 
+<!-- Input untuk menampung JSON data saat submit form ke backend -->
+<form id="hiddenSubmitForm" method="POST" style="display:none;">
+    <input type="hidden" name="judul" id="hiddenJudul">
+    <input type="hidden" name="tipe" id="hiddenTipe">
+    <input type="hidden" name="questions_data" id="hiddenQuestionsData">
+</form>
+
 <script>
-function updateFormatHint(tipe) {
+let questionsData = [];
+
+// Helper untuk escape HTML agar input form tidak rusak jika ada quotes
+function escapeHtml(unsafe) {
+    if (!unsafe) return "";
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+function handleTypeChange() {
+    const tipe = document.getElementById('quizTipe').value;
+
     if(tipe === 'pilihan_ganda') {
         document.getElementById('hint_pilihan_ganda').style.display = 'block';
         document.getElementById('hint_teks').style.display = 'none';
@@ -56,10 +90,162 @@ function updateFormatHint(tipe) {
         document.getElementById('hint_pilihan_ganda').style.display = 'none';
         document.getElementById('hint_teks').style.display = 'block';
     }
+
+    // Clear existing questions if type changes
+    questionsData = [];
+    renderQuestions();
 }
-// Initial call based on current selection if editing
+
+function renderQuestions() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    const tipe = document.getElementById('quizTipe').value;
+
+    if (questionsData.length === 0) {
+        container.innerHTML = '<p style="color: #666; font-style: italic;">Belum ada soal. Gunakan parser di bawah untuk menambahkan soal.</p>';
+        return;
+    }
+
+    questionsData.forEach((q, index) => {
+        const div = document.createElement('div');
+        div.className = 'form-group mt-1';
+        div.style.cssText = 'background-color: var(--bg-color); padding: 1.5rem; border-radius: 8px; position: relative; border-left: 4px solid var(--accent-color);';
+
+        let html = `<h4 style="margin-bottom: 1rem;">SOAL ${index + 1}</h4>`;
+
+        // Tombol Hapus Soal
+        html += `<button type="button" class="btn btn-danger" style="position: absolute; top: 1rem; right: 1.5rem; padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="deleteQuestion(${index})">Hapus Soal</button>`;
+
+        html += `<label>Pertanyaan</label>`;
+        html += `<textarea class="form-control mb-1 q-pertanyaan" style="min-height: 80px;" oninput="updateData(${index}, 'pertanyaan', this.value)">${escapeHtml(q.pertanyaan)}</textarea>`;
+
+        if (tipe === 'pilihan_ganda') {
+            html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">`;
+            ['a', 'b', 'c', 'd'].forEach(opt => {
+                const val = q[`opsi_${opt}`] || '';
+                html += `<div>
+                            <label>Opsi ${opt.toUpperCase()}</label>
+                            <input type="text" class="form-control" value="${escapeHtml(val)}" oninput="updateData(${index}, 'opsi_${opt}', this.value)">
+                         </div>`;
+            });
+            html += `</div>`;
+
+            html += `<label>Jawaban Benar</label>`;
+            html += `<select class="form-control" onchange="updateData(${index}, 'jawaban_benar', this.value)">`;
+            ['A', 'B', 'C', 'D'].forEach(opt => {
+                const selected = (q.jawaban_benar === opt) ? 'selected' : '';
+                html += `<option value="${opt}" ${selected}>${opt}</option>`;
+            });
+            html += `</select>`;
+        } else {
+            // Untuk Teks/Esai
+            html += `<label>Referensi Jawaban (Opsional)</label>`;
+            html += `<textarea class="form-control q-jawaban-referensi" style="min-height: 80px;" oninput="updateData(${index}, 'jawaban_referensi', this.value)">${escapeHtml(q.jawaban_referensi || '')}</textarea>`;
+        }
+
+        div.innerHTML = html;
+        container.appendChild(div);
+    });
+}
+
+function updateData(index, field, value) {
+    questionsData[index][field] = value;
+}
+
+function deleteQuestion(index) {
+    if(confirm('Hapus soal ini?')) {
+        questionsData.splice(index, 1);
+        renderQuestions(); // Re-render to update numbering and DOM
+    }
+}
+
+async function parseRawText() {
+    const rawText = document.getElementById('rawTextParser').value;
+    const tipe = document.getElementById('quizTipe').value;
+
+    if(!rawText.trim()) {
+        alert("Teks mentah kosong.");
+        return;
+    }
+
+    try {
+        const response = await fetch("{{ url_for('parse_quiz_raw') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ teks_mentah: rawText, tipe: tipe })
+        });
+
+        const data = await response.json();
+        if(data.error) {
+            alert("Error: " + data.error);
+        } else if(data.questions && data.questions.length > 0) {
+            // Gabungkan soal yang diparse ke existing questions
+            questionsData = questionsData.concat(data.questions);
+            renderQuestions();
+            // Kosongkan textarea parser
+            document.getElementById('rawTextParser').value = '';
+        } else {
+            alert("Tidak ada soal yang terdeteksi dari teks mentah Anda. Pastikan menggunakan format SOAL (angka).");
+        }
+    } catch(err) {
+        console.error(err);
+        alert("Gagal menghubungi server untuk parsing.");
+    }
+}
+
+function submitQuizForm() {
+    const judul = document.getElementById('quizJudul').value;
+    if(!judul.trim()) {
+        alert("Judul tidak boleh kosong.");
+        return;
+    }
+    if(questionsData.length === 0) {
+        alert("Harus ada minimal 1 soal sebelum menyimpan.");
+        return;
+    }
+
+    document.getElementById('hiddenJudul').value = judul;
+    document.getElementById('hiddenTipe').value = document.getElementById('quizTipe').value;
+    document.getElementById('hiddenQuestionsData').value = JSON.stringify(questionsData);
+
+    document.getElementById('hiddenSubmitForm').submit();
+}
+
+// Initializer
 window.onload = function() {
-    updateFormatHint(document.querySelector('select[name="tipe"]').value);
+    const tipe = document.getElementById('quizTipe').value;
+    if(tipe === 'pilihan_ganda') {
+        document.getElementById('hint_pilihan_ganda').style.display = 'block';
+    } else {
+        document.getElementById('hint_teks').style.display = 'block';
+    }
+
+    // Inject existing questions if in Edit Mode (using Jinja)
+    {% if quiz %}
+        {% if quiz.tipe == 'pilihan_ganda' %}
+            {% for q in quiz.mcq_questions %}
+                questionsData.push({
+                    'pertanyaan': {{ q.pertanyaan | tojson }},
+                    'opsi_a': {{ q.opsi_a | tojson }},
+                    'opsi_b': {{ q.opsi_b | tojson }},
+                    'opsi_c': {{ q.opsi_c | tojson }},
+                    'opsi_d': {{ q.opsi_d | tojson }},
+                    'jawaban_benar': {{ q.jawaban_benar | tojson }}
+                });
+            {% endfor %}
+        {% else %}
+            {% for q in quiz.text_questions %}
+                questionsData.push({
+                    'pertanyaan': {{ q.pertanyaan | tojson }},
+                    'jawaban_referensi': {{ (q.jawaban_referensi or '') | tojson }}
+                });
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+
+    renderQuestions();
 };
 </script>
 {% endblock %}
