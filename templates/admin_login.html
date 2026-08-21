@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Login Guru & Admin{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 0 auto; border-top: 5px solid var(--accent-color);">
+    <h2 class="text-center mb-1">Login Guru / Admin</h2>
+    <form method="POST" action="{{ url_for('admin_login') }}">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-accent" style="width: 100%;">Login Portal Pengajar</button>
+    </form>
+</div>
+{% endblock %}

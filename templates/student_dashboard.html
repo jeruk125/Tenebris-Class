@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Siswa{% endblock %}
+
+{% block content %}
+<h2>Halo, {{ current_user.username }}!</h2>
+<p class="mb-2">Selamat datang di Dashboard Belajarmu.</p>
+
+<h3 class="mb-1">Subjek Pelajaranmu</h3>
+<div class="grid-container">
+    {% for subject in subjects %}
+    <div class="card">
+        <h3>{{ subject.nama }}</h3>
+        <p class="mt-1 mb-1">Mulai belajar materi dan kerjakan quiz!</p>
+        <a href="{{ url_for('student_subject', subject_id=subject.id) }}" class="btn btn-primary">Masuk Kelas</a>
+    </div>
+    {% else %}
+    <p>Kamu belum terdaftar di subjek apapun. Silakan hubungi gurumu.</p>
+    {% endfor %}
+</div>
+{% endblock %}

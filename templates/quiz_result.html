@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Hasil Quiz{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('student_subject', subject_id=meeting.subjek_id) }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Pertemuan</a>
+</div>
+
+<div class="card text-center" style="border-top: 5px solid {% if result.skor and result.skor >= 70 %}var(--accent-color){% else %}#FF6B6B{% endif %};">
+    <h2>Hasil Quiz: {{ quiz.judul }}</h2>
+    <p>Dikerjakan pada: {{ result.waktu_pengerjaan.strftime('%d %b %Y, %H:%M') }}</p>
+
+    {% if result.skor is not none %}
+    <h1 style="font-size: 4rem; margin: 1rem 0; color: {% if result.skor >= 70 %}var(--accent-color){% else %}#FF6B6B{% endif %};">
+        {{ result.skor|round|int }}
+    </h1>
+    {% else %}
+    <div style="background-color: var(--secondary-color); padding: 1rem; border-radius: 8px; margin: 1.5rem 0; display: inline-block;">
+        <strong>Jawaban esai berhasil dikirim!</strong><br>
+        Menunggu penilaian manual jika diperlukan.
+    </div>
+    {% endif %}
+
+    <div class="mt-1">
+        <a href="{{ url_for('student_quiz', quiz_id=quiz.id) }}" class="btn btn-primary">Kerjakan Ulang</a>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <h3>Review Jawaban</h3>
+
+    {% for q_id, q_data in result.detail.items() %}
+    <div class="mt-2" style="padding: 1.5rem; background-color: var(--bg-color); border-radius: 8px; {% if q_data.is_correct is defined %}{% if q_data.is_correct %}border-left: 5px solid var(--accent-color);{% else %}border-left: 5px solid #FF6B6B;{% endif %}{% endif %}">
+        <p style="font-weight: 500; margin-bottom: 1rem;">{{ q_data.pertanyaan | nl2br }}</p>
+
+        {% if quiz.tipe == 'pilihan_ganda' %}
+            <ul style="list-style: none; padding: 0; margin-left: 1rem;">
+                <li style="{% if q_data.jawaban_benar == 'A' %}font-weight: bold; color: green;{% endif %}">A. {{ q_data.opsi_a | e }}</li>
+                <li style="{% if q_data.jawaban_benar == 'B' %}font-weight: bold; color: green;{% endif %}">B. {{ q_data.opsi_b | e }}</li>
+                <li style="{% if q_data.jawaban_benar == 'C' %}font-weight: bold; color: green;{% endif %}">C. {{ q_data.opsi_c | e }}</li>
+                <li style="{% if q_data.jawaban_benar == 'D' %}font-weight: bold; color: green;{% endif %}">D. {{ q_data.opsi_d | e }}</li>
+            </ul>
+
+            <div class="mt-1" style="padding: 0.8rem; border-radius: 4px; background-color: {% if q_data.is_correct %}#e6ffe6{% else %}#ffe6e6{% endif %};">
+                <strong>Jawabanmu:</strong> {{ q_data.jawaban_siswa | e }}
+                {% if not q_data.is_correct %}
+                    <br><strong>Jawaban Benar:</strong> {{ q_data.jawaban_benar | e }}
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="mt-1" style="padding: 0.8rem; border-radius: 4px; background-color: #fff; border: 1px solid #ddd;">
+                <strong>Jawabanmu:</strong><br>
+                {{ q_data.jawaban_siswa | nl2br }}
+            </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
