@@ -15,7 +15,7 @@
 
     {% for q_id, q_data in result.detail.items() %}
     <div class="mt-2" style="padding: 1.5rem; background-color: var(--bg-color); border-radius: 8px; {% if q_data.is_correct is defined %}{% if q_data.is_correct %}border-left: 5px solid var(--accent-color);{% else %}border-left: 5px solid #FF6B6B;{% endif %}{% endif %}">
-        <p style="font-weight: 500; margin-bottom: 1rem;">{{ q_data.pertanyaan | e | replace('\n', '<br>') | safe }}</p>
+        <p style="font-weight: 500; margin-bottom: 1rem;">{{ q_data.pertanyaan | nl2br }}</p>
 
         {% if quiz.tipe == 'pilihan_ganda' %}
             <ul style="list-style: none; padding: 0; margin-left: 1rem;">
@@ -34,7 +34,7 @@
         {% else %}
             <div class="mt-1" style="padding: 0.8rem; border-radius: 4px; background-color: #fff; border: 1px solid #ddd;">
                 <strong>Jawaban Siswa:</strong><br>
-                {{ q_data.jawaban_siswa | e | replace('\n', '<br>') | safe }}
+                {{ q_data.jawaban_siswa | nl2br }}
             </div>
         {% endif %}
     </div>
