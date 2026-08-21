@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Materi{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('teacher_subject_detail', subject_id=meeting.subjek_id) }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Pertemuan</a>
+</div>
+
+<div class="card">
+    <h2>{{ action }} Materi - Pertemuan {{ meeting.urutan }}</h2>
+
+    <form method="POST" class="mt-1">
+        <div class="form-group">
+            <label>Judul Materi</label>
+            <input type="text" name="judul" class="form-control" required value="{{ material.judul if material else '' }}">
+        </div>
+        <div class="form-group">
+            <label>Konten Materi (Gunakan Label: JUDUL:, TUJUAN:, MATERI:, CONTOH:)</label>
+            <textarea name="teks_mentah" class="form-control" required style="min-height: 300px; font-family: monospace;">{{ material.teks_mentah if material else '' }}</textarea>
+            <small style="color: #666; display: block; margin-top: 0.5rem;">
+                Format Contoh:<br>
+                JUDUL: Aljabar Dasar<br>
+                TUJUAN: Siswa paham variabel<br>
+                MATERI: Aljabar adalah...
+            </small>
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan Materi</button>
+    </form>
+</div>
+{% endblock %}

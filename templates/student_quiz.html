@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz: {{ quiz.judul }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{{ url_for('student_subject', subject_id=meeting.subjek_id) }}" style="text-decoration: none; color: var(--text-color);">&larr; Kembali ke Pertemuan</a>
+</div>
+
+<h2>Quiz: {{ quiz.judul }}</h2>
+
+<div class="card mt-2">
+    <form method="POST">
+        {% if quiz.tipe == 'pilihan_ganda' %}
+            {% for q in quiz.mcq_questions %}
+            <div class="form-group mb-2" style="background-color: var(--bg-color); padding: 1.5rem; border-radius: 8px;">
+                <p style="font-weight: 500; margin-bottom: 1rem;">{{ loop.index }}. {{ q.pertanyaan | nl2br }}</p>
+                <div style="margin-left: 1rem;">
+                    <label style="display: block; font-weight: normal; margin-bottom: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="q_{{ q.id }}" value="A" required> A. {{ q.opsi_a | e }}
+                    </label>
+                    <label style="display: block; font-weight: normal; margin-bottom: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="q_{{ q.id }}" value="B" required> B. {{ q.opsi_b | e }}
+                    </label>
+                    <label style="display: block; font-weight: normal; margin-bottom: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="q_{{ q.id }}" value="C" required> C. {{ q.opsi_c | e }}
+                    </label>
+                    <label style="display: block; font-weight: normal; margin-bottom: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="q_{{ q.id }}" value="D" required> D. {{ q.opsi_d | e }}
+                    </label>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            {% for q in quiz.text_questions %}
+            <div class="form-group mb-2" style="background-color: var(--bg-color); padding: 1.5rem; border-radius: 8px;">
+                <p style="font-weight: 500; margin-bottom: 1rem;">{{ loop.index }}. {{ q.pertanyaan | nl2br }}</p>
+                <textarea name="q_{{ q.id }}" class="form-control" required style="min-height: 100px;"></textarea>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">Kumpulkan Jawaban</button>
+    </form>
+</div>
+
+{% if attempts %}
+<div class="card mt-2">
+    <h3>Riwayat Percobaan</h3>
+    <ul style="list-style: none; padding: 0; margin-top: 1rem;">
+        {% for attempt in attempts %}
+        <li style="margin-bottom: 0.5rem;">
+            <a href="{{ url_for('quiz_result_detail', result_id=attempt.id) }}" style="text-decoration: none; color: var(--primary-color);">
+                Percobaan pada {{ attempt.waktu_pengerjaan.strftime('%d %b %Y, %H:%M') }}
+                {% if attempt.skor is not none %}- Skor: {{ attempt.skor|round|int }}{% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% endblock %}

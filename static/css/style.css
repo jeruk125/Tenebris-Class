@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #89CFF0; /* Soft Blue */
+    --secondary-color: #FDFD96; /* Soft Yellow */
+    --accent-color: #98FF98; /* Mint Green */
+    --bg-color: #F8F9FA; /* Off-White Background */
+    --text-color: #333333; /* Dark Gray for text */
+    --white: #FFFFFF;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --border-radius: 12px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--white);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.nav-links li a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links li a:hover {
+    color: var(--primary-color);
+}
+
+/* Layout */
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+/* Cards */
+.card {
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+}
+
+/* Forms & Inputs */
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+textarea.form-control {
+    min-height: 150px;
+    resize: vertical;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-primary { background-color: var(--primary-color); color: var(--text-color); }
+.btn-secondary { background-color: var(--secondary-color); color: var(--text-color); }
+.btn-accent { background-color: var(--accent-color); color: var(--text-color); }
+.btn-danger { background-color: #FF6B6B; color: white; }
+
+/* Flash Messages */
+.flash-messages {
+    margin-bottom: 1rem;
+}
+.flash {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    background-color: var(--white);
+    box-shadow: var(--shadow);
+    border-left: 5px solid var(--primary-color);
+}
+.flash.error { border-left-color: #FF6B6B; }
+.flash.success { border-left-color: var(--accent-color); }
+
+/* Material Content Styling */
+.material-content h2 { color: var(--primary-color); margin-bottom: 1rem; }
+.material-tujuan { background-color: var(--secondary-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+.material-contoh { background-color: var(--accent-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-family: monospace; }
+.material-teks { margin-bottom: 1rem; }
+
+/* Grid for lists */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Footer login link */
+.login-guru-link {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    font-size: 0.8rem;
+    color: #999;
+    text-decoration: none;
+}
+.login-guru-link:hover { color: var(--primary-color); }
+
+/* Utility */
+.text-center { text-align: center; }
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 2rem; }
+.mb-1 { margin-bottom: 1rem; }
+.mb-2 { margin-bottom: 2rem; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }

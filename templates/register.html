@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Registrasi Siswa{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 0 auto;">
+    <h2 class="text-center mb-1">Registrasi Siswa</h2>
+    <form method="POST" action="{{ url_for('register') }}" onsubmit="return validatePassword()">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required minlength="6">
+        </div>
+        <div class="form-group">
+            <label for="confirm_password">Konfirmasi Password</label>
+            <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+            <small id="password_error" style="color: #FF6B6B; display: none;">Password tidak cocok</small>
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width: 100%;">Daftar</button>
+    </form>
+    <div class="text-center mt-1">
+        <p>Sudah punya akun? <a href="{{ url_for('login') }}">Login di sini</a></p>
+    </div>
+</div>
+
+<script>
+function validatePassword() {
+    var pass = document.getElementById("password").value;
+    var conf = document.getElementById("confirm_password").value;
+    var error = document.getElementById("password_error");
+    if (pass !== conf) {
+        error.style.display = "block";
+        return false;
+    }
+    error.style.display = "none";
+    return true;
+}
+</script>
+{% endblock %}
