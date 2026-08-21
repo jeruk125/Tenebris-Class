@@ -14,7 +14,7 @@
         {% if quiz.tipe == 'pilihan_ganda' %}
             {% for q in quiz.mcq_questions %}
             <div class="form-group mb-2" style="background-color: var(--bg-color); padding: 1.5rem; border-radius: 8px;">
-                <p style="font-weight: 500; margin-bottom: 1rem;">{{ loop.index }}. {{ q.pertanyaan | e | replace('\n', '<br>') | safe }}</p>
+                <p style="font-weight: 500; margin-bottom: 1rem;">{{ loop.index }}. {{ q.pertanyaan | nl2br }}</p>
                 <div style="margin-left: 1rem;">
                     <label style="display: block; font-weight: normal; margin-bottom: 0.5rem; cursor: pointer;">
                         <input type="radio" name="q_{{ q.id }}" value="A" required> A. {{ q.opsi_a | e }}
@@ -34,7 +34,7 @@
         {% else %}
             {% for q in quiz.text_questions %}
             <div class="form-group mb-2" style="background-color: var(--bg-color); padding: 1.5rem; border-radius: 8px;">
-                <p style="font-weight: 500; margin-bottom: 1rem;">{{ loop.index }}. {{ q.pertanyaan | e | replace('\n', '<br>') | safe }}</p>
+                <p style="font-weight: 500; margin-bottom: 1rem;">{{ loop.index }}. {{ q.pertanyaan | nl2br }}</p>
                 <textarea name="q_{{ q.id }}" class="form-control" required style="min-height: 100px;"></textarea>
             </div>
             {% endfor %}
