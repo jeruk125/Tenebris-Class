@@ -19,7 +19,7 @@ login_manager.login_view = 'login'
 
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from models import Subject, Meeting, Material, Quiz, QuestionMCQ, QuestionText, QuizResult
+from models import Subject, Meeting, Material, Quiz, QuestionMCQ, QuestionText, QuizResult, SavedCategory, SavedMaterial, SavedQuiz
 
 from werkzeug.utils import secure_filename
 from markupsafe import Markup, escape
@@ -266,7 +266,17 @@ def teacher_subject_detail(subject_id):
         return redirect(url_for('index'))
     subject = Subject.query.get_or_404(subject_id)
     meetings = Meeting.query.filter_by(subjek_id=subject.id).order_by(Meeting.urutan).all()
-    return render_template('teacher_subject.html', subject=subject, meetings=meetings)
+
+    if current_user.role == 'admin':
+        categories = SavedCategory.query.all()
+        bank_materials = SavedMaterial.query.all()
+        bank_quizzes = SavedQuiz.query.all()
+    else:
+        categories = SavedCategory.query.filter_by(dibuat_oleh=current_user.id).all()
+        bank_materials = SavedMaterial.query.filter_by(dibuat_oleh=current_user.id).all()
+        bank_quizzes = SavedQuiz.query.filter_by(dibuat_oleh=current_user.id).all()
+
+    return render_template('teacher_subject.html', subject=subject, meetings=meetings, categories=categories, bank_materials=bank_materials, bank_quizzes=bank_quizzes)
 
 @app.route('/subject/<int:subject_id>/manage_students', methods=['GET', 'POST'])
 @login_required
@@ -444,6 +454,50 @@ def delete_material_file(file_id):
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/meeting/<int:meeting_id>/import_material/<int:saved_id>', methods=['POST'])
+@login_required
+def import_material(meeting_id, saved_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+
+    meeting = Meeting.query.get_or_404(meeting_id)
+    saved_mat = SavedMaterial.query.get_or_404(saved_id)
+
+    new_material = Material(
+        pertemuan_id=meeting.id,
+        judul=saved_mat.judul,
+        teks_mentah=saved_mat.teks_mentah,
+        dibuat_oleh=current_user.id
+    )
+    db.session.add(new_material)
+    db.session.commit()
+
+    flash('Materi berhasil diimpor dari bank.', 'success')
+    return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
+
+
+@app.route('/material/save_to_bank/<int:material_id>', methods=['POST'])
+@login_required
+def save_material_to_bank(material_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    material = Material.query.get_or_404(material_id)
+    meeting = Meeting.query.get(material.pertemuan_id)
+
+    kategori_id = request.form.get('kategori_id', type=int)
+
+    new_saved = SavedMaterial(
+        judul=material.judul,
+        teks_mentah=material.teks_mentah,
+        dibuat_oleh=current_user.id,
+        kategori_id=kategori_id
+    )
+    db.session.add(new_saved)
+    db.session.commit()
+    flash('Materi berhasil disimpan ke Bank.', 'success')
+    return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
+
+
 @app.route('/material/delete/<int:material_id>', methods=['POST'])
 @login_required
 def delete_material(material_id):
@@ -619,6 +673,75 @@ def edit_quiz(quiz_id):
 
     return render_template('quiz_form.html', meeting=meeting, quiz=quiz, action='Edit')
 
+@app.route('/meeting/<int:meeting_id>/import_quiz/<int:saved_id>', methods=['POST'])
+@login_required
+def import_quiz(meeting_id, saved_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+
+    meeting = Meeting.query.get_or_404(meeting_id)
+    saved_quiz = SavedQuiz.query.get_or_404(saved_id)
+
+    new_quiz = Quiz(
+        pertemuan_id=meeting.id,
+        judul=saved_quiz.judul,
+        tipe=saved_quiz.tipe,
+        teks_mentah=saved_quiz.teks_mentah,
+        dibuat_oleh=current_user.id
+    )
+    db.session.add(new_quiz)
+    db.session.flush() # get new quiz id
+
+    # parse the raw text to recreate the structured questions
+    from parsers import parse_quiz_mcq, parse_quiz_text
+
+    if new_quiz.tipe == 'pilihan_ganda':
+        questions_data = parse_quiz_mcq(new_quiz.teks_mentah)
+        for q_data in questions_data:
+            q = QuestionMCQ(
+                quiz_id=new_quiz.id,
+                pertanyaan=q_data.get('pertanyaan',''),
+                opsi_a=q_data.get('opsi_a',''), opsi_b=q_data.get('opsi_b',''),
+                opsi_c=q_data.get('opsi_c',''), opsi_d=q_data.get('opsi_d',''),
+                jawaban_benar=q_data.get('jawaban_benar','A')
+            )
+            db.session.add(q)
+    elif new_quiz.tipe == 'teks':
+        questions_data = parse_quiz_text(new_quiz.teks_mentah)
+        for q_data in questions_data:
+            q = QuestionText(
+                quiz_id=new_quiz.id,
+                pertanyaan=q_data.get('pertanyaan',''),
+                jawaban_referensi=q_data.get('jawaban_referensi','')
+            )
+            db.session.add(q)
+
+    db.session.commit()
+    flash('Kuis berhasil diimpor dari bank.', 'success')
+    return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
+
+@app.route('/quiz/save_to_bank/<int:quiz_id>', methods=['POST'])
+@login_required
+def save_quiz_to_bank(quiz_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    quiz = Quiz.query.get_or_404(quiz_id)
+    meeting = Meeting.query.get(quiz.pertemuan_id)
+
+    kategori_id = request.form.get('kategori_id', type=int)
+
+    new_saved = SavedQuiz(
+        judul=quiz.judul,
+        tipe=quiz.tipe,
+        teks_mentah=quiz.teks_mentah,
+        dibuat_oleh=current_user.id,
+        kategori_id=kategori_id
+    )
+    db.session.add(new_saved)
+    db.session.commit()
+    flash('Kuis berhasil disimpan ke Bank.', 'success')
+    return redirect(url_for('teacher_subject_detail', subject_id=meeting.subjek_id))
+
 @app.route('/quiz/delete/<int:quiz_id>', methods=['POST'])
 @login_required
 def delete_quiz(quiz_id):
@@ -699,6 +822,130 @@ def delete_quiz_result(result_id):
     db.session.commit()
     flash('Hasil quiz berhasil dihapus.', 'success')
     return redirect(url_for('view_quiz_results', quiz_id=quiz_id))
+
+
+@app.route('/bank', methods=['GET'])
+@login_required
+def bank_list():
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+
+    category_id = request.args.get('category_id', type=int)
+    guru_id = request.args.get('guru_id', type=int)
+
+    # Categories that belong to the current user (if guru) or all (if admin)
+    if current_user.role == 'admin':
+        categories = SavedCategory.query.all()
+    else:
+        categories = SavedCategory.query.filter_by(dibuat_oleh=current_user.id).all()
+
+    # Base queries
+    mat_query = SavedMaterial.query
+    quiz_query = SavedQuiz.query
+
+    if current_user.role != 'admin':
+        mat_query = mat_query.filter_by(dibuat_oleh=current_user.id)
+        quiz_query = quiz_query.filter_by(dibuat_oleh=current_user.id)
+    elif guru_id:
+        mat_query = mat_query.filter_by(dibuat_oleh=guru_id)
+        quiz_query = quiz_query.filter_by(dibuat_oleh=guru_id)
+
+    if category_id:
+        mat_query = mat_query.filter_by(kategori_id=category_id)
+        quiz_query = quiz_query.filter_by(kategori_id=category_id)
+
+    saved_materials = mat_query.all()
+    saved_quizzes = quiz_query.all()
+
+    teachers = User.query.filter_by(role='guru').all() if current_user.role == 'admin' else []
+
+    # Assign user to items for display in admin view
+    for sm in saved_materials:
+        sm.dibuat_oleh_user = User.query.get(sm.dibuat_oleh)
+    for sq in saved_quizzes:
+        sq.dibuat_oleh_user = User.query.get(sq.dibuat_oleh)
+
+    return render_template('bank.html',
+                           categories=categories,
+                           saved_materials=saved_materials,
+                           saved_quizzes=saved_quizzes,
+                           teachers=teachers,
+                           current_category_id=category_id,
+                           current_guru_id=guru_id)
+
+@app.route('/bank/category/create', methods=['POST'])
+@login_required
+def create_category():
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    nama = request.form.get('nama')
+    if nama:
+        new_cat = SavedCategory(nama=nama, dibuat_oleh=current_user.id)
+        db.session.add(new_cat)
+        db.session.commit()
+        flash('Kategori berhasil ditambahkan.', 'success')
+    return redirect(url_for('bank_list'))
+
+@app.route('/bank/copy/<string:item_type>/<int:item_id>', methods=['POST'])
+@login_required
+def copy_saved_item(item_type, item_id):
+    if current_user.role != 'admin':
+        return redirect(url_for('index'))
+
+    target_user_id = request.form.get('target_user_id', type=int)
+    if not target_user_id:
+        flash('Guru tujuan tidak valid.', 'error')
+        return redirect(url_for('bank_list'))
+
+    if item_type == 'material':
+        item = SavedMaterial.query.get_or_404(item_id)
+        new_item = SavedMaterial(
+            judul=item.judul + " (Copy)",
+            teks_mentah=item.teks_mentah,
+            dibuat_oleh=target_user_id,
+            kategori_id=item.kategori_id # Optional: might be better to set null if categories are user-specific, but let's keep it for now
+        )
+        db.session.add(new_item)
+    elif item_type == 'quiz':
+        item = SavedQuiz.query.get_or_404(item_id)
+        new_item = SavedQuiz(
+            judul=item.judul + " (Copy)",
+            tipe=item.tipe,
+            teks_mentah=item.teks_mentah,
+            dibuat_oleh=target_user_id,
+            kategori_id=item.kategori_id
+        )
+        db.session.add(new_item)
+
+    db.session.commit()
+    flash(f'{item_type.capitalize()} berhasil dicopy ke guru lain.', 'success')
+    return redirect(url_for('bank_list'))
+
+@app.route('/bank/delete/material/<int:saved_id>', methods=['POST'])
+@login_required
+def delete_saved_material(saved_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    item = SavedMaterial.query.get_or_404(saved_id)
+    if current_user.role != 'admin' and item.dibuat_oleh != current_user.id:
+        return redirect(url_for('index'))
+    db.session.delete(item)
+    db.session.commit()
+    flash('Materi tersimpan berhasil dihapus.', 'success')
+    return redirect(request.referrer or url_for('bank_list'))
+
+@app.route('/bank/delete/quiz/<int:saved_id>', methods=['POST'])
+@login_required
+def delete_saved_quiz(saved_id):
+    if current_user.role not in ['admin', 'guru']:
+        return redirect(url_for('index'))
+    item = SavedQuiz.query.get_or_404(saved_id)
+    if current_user.role != 'admin' and item.dibuat_oleh != current_user.id:
+        return redirect(url_for('index'))
+    db.session.delete(item)
+    db.session.commit()
+    flash('Kuis tersimpan berhasil dihapus.', 'success')
+    return redirect(request.referrer or url_for('bank_list'))
 
 
 @app.route('/admin/users')

@@ -50,38 +50,126 @@
     <div style="margin-bottom: 1rem;">
         <strong>Materi:</strong>
         <a href="{{ url_for('create_material', meeting_id=meeting.id) }}" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #eee; margin-left: 1rem;">+ Tambah Materi</a>
+        <button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #eee; margin-left: 0.5rem;" onclick="document.getElementById('importMatModal{{ meeting.id }}').showModal()">Ambil Materi Tersimpan</button>
         <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
             {% for material in meeting.materials %}
             <li style="margin-bottom: 0.5rem;">
                 {{ material.judul }}
                 <a href="{{ url_for('edit_material', material_id=material.id) }}" style="margin-left: 10px; color: var(--primary-color);">Edit</a>
+                <button type="button" style="border:none; background:none; color:var(--primary-color); cursor:pointer; margin-left: 10px;" onclick="document.getElementById('saveMatModal{{ material.id }}').showModal()">Simpan ke Bank</button>
                 <form method="POST" action="{{ url_for('delete_material', material_id=material.id) }}" style="display:inline; margin-left: 10px;">
                     <button type="submit" class="btn-delete" style="border:none; background:none; color:#FF6B6B; cursor:pointer;">Hapus</button>
                 </form>
             </li>
+
+            <dialog id="saveMatModal{{ material.id }}" style="border: none; border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
+                <h3>Simpan "{{ material.judul }}" ke Bank Materi</h3>
+                <form method="POST" action="{{ url_for('save_material_to_bank', material_id=material.id) }}">
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>Pilih Kategori (Opsional):</label>
+                        <select name="kategori_id" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                            <option value="">Tanpa Kategori</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('saveMatModal{{ material.id }}').close()">Batal</button>
+                        <button type="submit" class="btn">Simpan</button>
+                    </div>
+                </form>
+            </dialog>
             {% else %}
             <li>Belum ada materi.</li>
             {% endfor %}
         </ul>
+
+        <dialog id="importMatModal{{ meeting.id }}" style="border: none; border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px;">
+            <h3>Ambil Materi dari Bank</h3>
+            <div style="max-height: 300px; overflow-y: auto; margin-top: 1rem;">
+                {% if bank_materials %}
+                    <ul style="list-style: none; padding: 0;">
+                    {% for bm in bank_materials %}
+                        <li style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
+                            <span>{{ bm.judul }} <small>({{ bm.category.nama if bm.category else 'Tanpa Kategori' }})</small></span>
+                            <form method="POST" action="{{ url_for('import_material', meeting_id=meeting.id, saved_id=bm.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Pilih</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Tidak ada materi tersimpan di Bank.</p>
+                {% endif %}
+            </div>
+            <div style="text-align: right; margin-top: 1rem;">
+                <button type="button" class="btn" onclick="document.getElementById('importMatModal{{ meeting.id }}').close()">Tutup</button>
+            </div>
+        </dialog>
     </div>
 
     <div>
         <strong>Quiz:</strong>
         <a href="{{ url_for('create_quiz', meeting_id=meeting.id) }}" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #eee; margin-left: 1rem;">+ Tambah Quiz</a>
+        <button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #eee; margin-left: 0.5rem;" onclick="document.getElementById('importQuizModal{{ meeting.id }}').showModal()">Ambil Kuis Tersimpan</button>
         <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
             {% for quiz in meeting.quizzes %}
             <li style="margin-bottom: 0.5rem;">
                 {{ quiz.judul }} ({{ quiz.tipe }})
                 <a href="{{ url_for('edit_quiz', quiz_id=quiz.id) }}" style="margin-left: 10px; color: var(--primary-color);">Edit</a>
                 <a href="{{ url_for('view_quiz_results', quiz_id=quiz.id) }}" style="margin-left: 10px; color: var(--accent-color); font-weight: bold;">Lihat Hasil</a>
+                <button type="button" style="border:none; background:none; color:var(--primary-color); cursor:pointer; margin-left: 10px;" onclick="document.getElementById('saveQuizModal{{ quiz.id }}').showModal()">Simpan ke Bank</button>
                 <form method="POST" action="{{ url_for('delete_quiz', quiz_id=quiz.id) }}" style="display:inline; margin-left: 10px;">
                     <button type="submit" class="btn-delete" style="border:none; background:none; color:#FF6B6B; cursor:pointer;">Hapus</button>
                 </form>
             </li>
+
+            <dialog id="saveQuizModal{{ quiz.id }}" style="border: none; border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
+                <h3>Simpan "{{ quiz.judul }}" ke Bank Kuis</h3>
+                <form method="POST" action="{{ url_for('save_quiz_to_bank', quiz_id=quiz.id) }}">
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>Pilih Kategori (Opsional):</label>
+                        <select name="kategori_id" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                            <option value="">Tanpa Kategori</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('saveQuizModal{{ quiz.id }}').close()">Batal</button>
+                        <button type="submit" class="btn">Simpan</button>
+                    </div>
+                </form>
+            </dialog>
             {% else %}
             <li>Belum ada quiz.</li>
             {% endfor %}
         </ul>
+
+        <dialog id="importQuizModal{{ meeting.id }}" style="border: none; border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px;">
+            <h3>Ambil Kuis dari Bank</h3>
+            <div style="max-height: 300px; overflow-y: auto; margin-top: 1rem;">
+                {% if bank_quizzes %}
+                    <ul style="list-style: none; padding: 0;">
+                    {% for bq in bank_quizzes %}
+                        <li style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
+                            <span>{{ bq.judul }} <small>({{ bq.category.nama if bq.category else 'Tanpa Kategori' }})</small></span>
+                            <form method="POST" action="{{ url_for('import_quiz', meeting_id=meeting.id, saved_id=bq.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Pilih</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Tidak ada kuis tersimpan di Bank.</p>
+                {% endif %}
+            </div>
+            <div style="text-align: right; margin-top: 1rem;">
+                <button type="button" class="btn" onclick="document.getElementById('importQuizModal{{ meeting.id }}').close()">Tutup</button>
+            </div>
+        </dialog>
     </div>
 </div>
 {% else %}

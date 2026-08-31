@@ -23,6 +23,10 @@
                 {% endif %}
 
                 {% if current_user.role in ['admin', 'guru'] %}
+                    <li><a href="{{ url_for('bank_list') }}">Bank Materi & Kuis</a></li>
+                {% endif %}
+
+                {% if current_user.role in ['admin', 'guru'] %}
                     <li><a href="{{ url_for('change_password') }}">Ubah Password</a></li>
                 {% endif %}
 
