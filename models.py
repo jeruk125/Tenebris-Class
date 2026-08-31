@@ -92,3 +92,26 @@ class QuizResult(db.Model):
     @detail.setter
     def detail(self, value):
         self.detail_jawaban = json.dumps(value)
+
+class SavedCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nama = db.Column(db.String(100), nullable=False)
+    dibuat_oleh = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    saved_materials = db.relationship('SavedMaterial', backref='category', lazy=True)
+    saved_quizzes = db.relationship('SavedQuiz', backref='category', lazy=True)
+
+class SavedMaterial(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    judul = db.Column(db.String(200), nullable=False)
+    teks_mentah = db.Column(db.Text, nullable=False)
+    dibuat_oleh = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    kategori_id = db.Column(db.Integer, db.ForeignKey('saved_category.id'), nullable=True)
+
+class SavedQuiz(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    judul = db.Column(db.String(200), nullable=False)
+    tipe = db.Column(db.String(20), nullable=False) # 'pilihan_ganda' or 'teks'
+    teks_mentah = db.Column(db.Text, nullable=False)
+    dibuat_oleh = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    kategori_id = db.Column(db.Integer, db.ForeignKey('saved_category.id'), nullable=True)

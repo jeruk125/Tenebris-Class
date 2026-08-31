@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}Bank Materi & Kuis{% endblock %}
+
+{% block content %}
+<div class="header-section">
+    <h1>Bank Materi & Kuis</h1>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h2>Kategori</h2>
+    <form method="POST" action="{{ url_for('create_category') }}" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+        <input type="text" name="nama" placeholder="Nama Kategori Baru" required>
+        <button type="submit" class="btn">Buat Kategori</button>
+    </form>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <a href="{{ url_for('bank_list') }}" class="btn {% if not current_category_id %}btn-primary{% else %}btn-secondary{% endif %}">Semua</a>
+        {% for cat in categories %}
+        <a href="{{ url_for('bank_list', category_id=cat.id) }}" class="btn {% if current_category_id == cat.id %}btn-primary{% else %}btn-secondary{% endif %}">{{ cat.nama }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+{% if current_user.role == 'admin' %}
+<div class="card" style="margin-bottom: 2rem;">
+    <h2>Filter Berdasarkan Guru (Admin View)</h2>
+    <form method="GET" action="{{ url_for('bank_list') }}" style="display: flex; gap: 1rem;">
+        {% if current_category_id %}
+        <input type="hidden" name="category_id" value="{{ current_category_id }}">
+        {% endif %}
+        <select name="guru_id" onchange="this.form.submit()">
+            <option value="">Semua Guru</option>
+            {% for g in teachers %}
+            <option value="{{ g.id }}" {% if current_guru_id == g.id %}selected{% endif %}>{{ g.username }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+{% endif %}
+
+<div class="grid" style="grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- Materi -->
+    <div>
+        <h2>Materi Tersimpan</h2>
+        {% for sm in saved_materials %}
+        <div class="card" style="margin-bottom: 1rem;">
+            <h3>{{ sm.judul }}</h3>
+            <p><strong>Kategori:</strong> {{ sm.category.nama if sm.category else 'Tanpa Kategori' }}</p>
+            {% if current_user.role == 'admin' %}
+            <p><strong>Pemilik:</strong> {{ sm.dibuat_oleh_user.username }}</p>
+            {% endif %}
+
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="document.getElementById('viewMat{{ sm.id }}').showModal()">Lihat Teks</button>
+                {% if current_user.role == 'admin' %}
+                <button class="btn btn-secondary" onclick="document.getElementById('copyMat{{ sm.id }}').showModal()">Copy ke Guru Lain</button>
+                {% endif %}
+                <form method="POST" action="{{ url_for('delete_saved_material', saved_id=sm.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-delete">Hapus</button>
+                </form>
+            </div>
+
+            <dialog id="viewMat{{ sm.id }}" style="width: 80%; max-width: 600px; border-radius: 8px; border: none; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3>{{ sm.judul }}</h3>
+                <pre style="white-space: pre-wrap; background: #f8f9fa; padding: 1rem; border-radius: 4px; max-height: 300px; overflow-y: auto;">{{ sm.teks_mentah }}</pre>
+                <div style="margin-top: 1rem; text-align: right;">
+                    <button class="btn" onclick="document.getElementById('viewMat{{ sm.id }}').close()">Tutup</button>
+                </div>
+            </dialog>
+
+            {% if current_user.role == 'admin' %}
+            <dialog id="copyMat{{ sm.id }}" style="width: 80%; max-width: 400px; border-radius: 8px; border: none; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3>Copy Materi ke Guru Lain</h3>
+                <form method="POST" action="{{ url_for('copy_saved_item', item_type='material', item_id=sm.id) }}">
+                    <label>Pilih Guru:</label>
+                    <select name="target_user_id" required>
+                        <option value="">-- Pilih Guru --</option>
+                        {% for g in teachers %}
+                            {% if g.id != sm.dibuat_oleh %}
+                            <option value="{{ g.id }}">{{ g.username }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <div style="margin-top: 1rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('copyMat{{ sm.id }}').close()">Batal</button>
+                        <button type="submit" class="btn">Copy</button>
+                    </div>
+                </form>
+            </dialog>
+            {% endif %}
+        </div>
+        {% else %}
+        <p>Tidak ada materi tersimpan.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Quiz -->
+    <div>
+        <h2>Kuis Tersimpan</h2>
+        {% for sq in saved_quizzes %}
+        <div class="card" style="margin-bottom: 1rem;">
+            <h3>{{ sq.judul }}</h3>
+            <p><strong>Tipe:</strong> {{ sq.tipe }}</p>
+            <p><strong>Kategori:</strong> {{ sq.category.nama if sq.category else 'Tanpa Kategori' }}</p>
+            {% if current_user.role == 'admin' %}
+            <p><strong>Pemilik:</strong> {{ sq.dibuat_oleh_user.username }}</p>
+            {% endif %}
+
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="document.getElementById('viewQuiz{{ sq.id }}').showModal()">Lihat Teks</button>
+                {% if current_user.role == 'admin' %}
+                <button class="btn btn-secondary" onclick="document.getElementById('copyQuiz{{ sq.id }}').showModal()">Copy ke Guru Lain</button>
+                {% endif %}
+                <form method="POST" action="{{ url_for('delete_saved_quiz', saved_id=sq.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-delete">Hapus</button>
+                </form>
+            </div>
+
+            <dialog id="viewQuiz{{ sq.id }}" style="width: 80%; max-width: 600px; border-radius: 8px; border: none; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3>{{ sq.judul }}</h3>
+                <pre style="white-space: pre-wrap; background: #f8f9fa; padding: 1rem; border-radius: 4px; max-height: 300px; overflow-y: auto;">{{ sq.teks_mentah }}</pre>
+                <div style="margin-top: 1rem; text-align: right;">
+                    <button class="btn" onclick="document.getElementById('viewQuiz{{ sq.id }}').close()">Tutup</button>
+                </div>
+            </dialog>
+
+            {% if current_user.role == 'admin' %}
+            <dialog id="copyQuiz{{ sq.id }}" style="width: 80%; max-width: 400px; border-radius: 8px; border: none; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3>Copy Kuis ke Guru Lain</h3>
+                <form method="POST" action="{{ url_for('copy_saved_item', item_type='quiz', item_id=sq.id) }}">
+                    <label>Pilih Guru:</label>
+                    <select name="target_user_id" required>
+                        <option value="">-- Pilih Guru --</option>
+                        {% for g in teachers %}
+                            {% if g.id != sq.dibuat_oleh %}
+                            <option value="{{ g.id }}">{{ g.username }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <div style="margin-top: 1rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('copyQuiz{{ sq.id }}').close()">Batal</button>
+                        <button type="submit" class="btn">Copy</button>
+                    </div>
+                </form>
+            </dialog>
+            {% endif %}
+        </div>
+        {% else %}
+        <p>Tidak ada kuis tersimpan.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
