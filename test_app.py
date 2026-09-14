@@ -20,8 +20,8 @@ class AppTestCase(unittest.TestCase):
         with app.app_context():
             from werkzeug.security import generate_password_hash
             # 1. Create Admin & Student (admin might already exist due to app initialization, let's create a new unique one for test)
-            admin = User(username='testadmin', password_hash=generate_password_hash('admin123'), role='admin')
-            student = User(username='student1', password_hash=generate_password_hash('pass123'), role='siswa')
+            admin = User(username='testadmin_test', password_hash=generate_password_hash('admin123'), role='admin')
+            student = User(username='student1_test', password_hash=generate_password_hash('pass123'), role='siswa')
             db.session.add(admin)
             db.session.add(student)
             db.session.commit()
@@ -30,7 +30,7 @@ class AppTestCase(unittest.TestCase):
             student_id = student.id
 
         # 2. Login as admin
-        response = self.client.post('/admin_login', data=dict(username='testadmin', password='admin123'), follow_redirects=True)
+        response = self.client.post('/admin_login', data=dict(username='testadmin_test', password='admin123'), follow_redirects=True)
         self.assertIn(b'Dashboard Guru', response.data)
 
         # 3. Create Subject
@@ -77,7 +77,7 @@ class AppTestCase(unittest.TestCase):
         self.client.get('/logout', follow_redirects=True)
 
         # 8. Login as Student
-        response = self.client.post('/login', data=dict(username='student1', password='pass123'), follow_redirects=True)
+        response = self.client.post('/login', data=dict(username='student1_test', password='pass123'), follow_redirects=True)
         self.assertIn(b'Matematika Dasar', response.data)
 
         # 9. Take Quiz

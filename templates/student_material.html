@@ -26,3 +26,36 @@
     {% endif %}
 </div>
 {% endblock %}
+{% block scripts %}
+<script>
+function copyTableToExcel(btn) {
+    const table = btn.nextElementSibling;
+    let tsv = '';
+
+    // Iterate rows
+    for (let i = 0; i < table.rows.length; i++) {
+        const row = table.rows[i];
+        const rowData = [];
+
+        // Iterate cells
+        for (let j = 0; j < row.cells.length; j++) {
+            // Get inner text and replace tabs or newlines with spaces to avoid breaking TSV
+            let text = row.cells[j].innerText.replace(/\t|\n/g, ' ').trim();
+            rowData.push(text);
+        }
+        tsv += rowData.join('\t') + '\n';
+    }
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(tsv).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => {
+            btn.innerText = originalText;
+        }, 2000);
+    }).catch(err => {
+        alert('Failed to copy table: ' + err);
+    });
+}
+</script>
+{% endblock %}

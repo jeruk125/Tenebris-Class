@@ -146,7 +146,10 @@ def student_material(material_id):
     if subject not in current_user.enrolled_subjects:
         return redirect(url_for('student_dashboard'))
 
-    parsed_content = parse_material(material.teks_mentah)
+    parsed_result = parse_material(material.teks_mentah)
+    parsed_content = parsed_result['content'] if parsed_result['success'] else None
+    errors = parsed_result['errors'] if not parsed_result['success'] else []
+    return render_template('student_material.html', material=material, parsed_content=parsed_content, meeting=meeting, errors=errors)
     return render_template('student_material.html', material=material, parsed_content=parsed_content, meeting=meeting)
 
 @app.route('/student/quiz/<int:quiz_id>', methods=['GET', 'POST'])
@@ -534,13 +537,17 @@ def parse_quiz_raw():
     teks = data['teks_mentah']
 
     if tipe == 'pilihan_ganda':
-        questions = parse_quiz_mcq(teks)
+        res = parse_quiz_mcq(teks)
+        questions = res['content']
+        errors = res.get('errors', [])
     elif tipe == 'teks':
-        questions = parse_quiz_text(teks)
+        res = parse_quiz_text(teks)
+        questions = res['content']
+        errors = res.get('errors', [])
     else:
         return jsonify({'error': 'Unknown type'}), 400
 
-    return jsonify({'questions': questions})
+    return jsonify({'questions': questions, 'errors': errors})
 
 import json
 
@@ -696,7 +703,8 @@ def import_quiz(meeting_id, saved_id):
     from parsers import parse_quiz_mcq, parse_quiz_text
 
     if new_quiz.tipe == 'pilihan_ganda':
-        questions_data = parse_quiz_mcq(new_quiz.teks_mentah)
+        res = parse_quiz_mcq(new_quiz.teks_mentah)
+        questions_data = res['content']
         for q_data in questions_data:
             q = QuestionMCQ(
                 quiz_id=new_quiz.id,
@@ -707,7 +715,8 @@ def import_quiz(meeting_id, saved_id):
             )
             db.session.add(q)
     elif new_quiz.tipe == 'teks':
-        questions_data = parse_quiz_text(new_quiz.teks_mentah)
+        res = parse_quiz_text(new_quiz.teks_mentah)
+        questions_data = res['content']
         for q_data in questions_data:
             q = QuestionText(
                 quiz_id=new_quiz.id,
