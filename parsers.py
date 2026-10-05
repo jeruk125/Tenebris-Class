@@ -342,7 +342,6 @@ class MaterialRenderer:
             return ""
 
         html = ['<div class="tc-table-container">']
-        html.append('<button type="button" class="tc-copy-btn" onclick="copyTableToExcel(this)">Copy Table</button>')
         html.append('<table class="tc-table">')
 
         for i, line in enumerate(lines):
