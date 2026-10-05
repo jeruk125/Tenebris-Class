@@ -143,13 +143,23 @@ Tenebris-Class/
 │   └── css/
 │       └── ...
 │
+├── docs/
+│   ├── AI_CONTENT_GENERATION_PROMPT.md
+│   ├── AI_GUIDE.md
+│   └── PARSER_FORMAT.md
+│
 ├── test_app.py
 ├── test_parsers.py
 │
+├── AI_GUIDE.md
 └── README.md
 ```
 
 ### Main Files
+
+#### `AI_GUIDE.md`
+
+Panduan komprehensif khusus sistem AI (LLM / Agent) yang mencakup arsitektur sistem, skema basis data, spesifikasi Tenebris-Class Markup Language (TCML), panduan prompt, dan contoh materi siap pakai.
 
 #### `app.py`
 
