@@ -1,4 +1,8 @@
 import unittest
+import os
+
+os.environ.setdefault('SECRET_KEY', 'test-only-secret-key')
+
 from app import app, db
 from models import User, Subject, Meeting, Material, Quiz, QuestionMCQ
 

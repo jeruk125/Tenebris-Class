@@ -278,22 +278,14 @@ http://127.0.0.1:5000
 
 ## ⚙️ Configuration
 
-Aplikasi menggunakan environment variable untuk beberapa konfigurasi penting.
-
-Contohnya:
-
-```text
-SECRET_KEY
-```
-
-Jika tidak diberikan, aplikasi memiliki nilai default untuk development.
-
-Untuk penggunaan production, disarankan memberikan `SECRET_KEY` melalui environment variable.
+Aplikasi wajib menggunakan `SECRET_KEY` dari environment variable. Tidak ada nilai
+default; aplikasi akan berhenti saat startup jika variabel ini belum diatur.
+Gunakan kunci acak yang kuat dan jangan commit atau membagikannya.
 
 Contoh Windows:
 
 ```powershell
-$env:SECRET_KEY="your-secret-key"
+$env:SECRET_KEY="<secret-random-yang-kuat>"
 python app.py
 ```
 
