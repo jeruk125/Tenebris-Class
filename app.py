@@ -1036,13 +1036,19 @@ def change_password():
 def create_admin():
     with app.app_context():
         db.create_all()
-        admin = User.query.filter_by(username='admin').first()
+        admin = User.query.filter_by(role='admin').first()
         if not admin:
-            hashed_pw = generate_password_hash('REDACTED_ADMIN_PASSWORD')
-            admin = User(username='admin', password_hash=hashed_pw, role='admin')
+            username = os.environ.get('ADMIN_USERNAME')
+            password = os.environ.get('ADMIN_PASSWORD')
+            if not username or not password:
+                raise RuntimeError(
+                    'ADMIN_USERNAME and ADMIN_PASSWORD must be set to create the initial admin.'
+                )
+            hashed_pw = generate_password_hash(password)
+            admin = User(username=username, password_hash=hashed_pw, role='admin')
             db.session.add(admin)
             db.session.commit()
-            print("Default admin created (admin/REDACTED_ADMIN_PASSWORD). Please change password after first login.")
+            print("Initial admin created from environment configuration.")
 
 if __name__ == '__main__':
     create_admin()

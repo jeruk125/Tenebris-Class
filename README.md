@@ -282,10 +282,15 @@ Aplikasi wajib menggunakan `SECRET_KEY` dari environment variable. Tidak ada nil
 default; aplikasi akan berhenti saat startup jika variabel ini belum diatur.
 Gunakan kunci acak yang kuat dan jangan commit atau membagikannya.
 
+Saat database belum memiliki akun admin, `ADMIN_USERNAME` dan `ADMIN_PASSWORD`
+juga wajib diatur untuk membuat akun awal. Nilai kredensial tidak dicetak ke log.
+
 Contoh Windows:
 
 ```powershell
 $env:SECRET_KEY="<secret-random-yang-kuat>"
+$env:ADMIN_USERNAME="<nama-admin>"
+$env:ADMIN_PASSWORD="<password-kuat>"
 python app.py
 ```
 
